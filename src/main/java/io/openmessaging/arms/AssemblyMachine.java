@@ -1,6 +1,9 @@
 package io.openmessaging.arms;
 
+import static io.openmessaging.GlobalConfig.BombBodySize;
+import static io.openmessaging.GlobalConfig.BombIndexSize;
 import static io.openmessaging.GlobalConfig.BombSize;
+import static io.openmessaging.GlobalConfig.IndexByte;
 
 import io.openmessaging.GlobalConfig;
 import io.openmessaging.Message;
@@ -49,31 +52,32 @@ public class AssemblyMachine {
         ByteBuffer indexBuffer = localCarriage.get().indexBuffer;
         indexBuffer.put(ByteUtil.toIntBytes(message.getT()));
         indexBuffer.put(ByteUtil.toIntBytes(message.getA()));
-        indexBuffer.putLong(localCarriage.get().bodyFileOffset.getAndAdd(32));
+        indexBuffer.put(ByteUtil.toIntBytes(localCarriage.get().bodyFileOffset.getAndAdd(32)));
         bodyBuffer.put(message.getBody(), 0, 32);
-        if (bodyBuffer.position() >= BombSize) {
+        if (bodyBuffer.position() >= BombBodySize) {
             BombBlock bombBlock = mortarFile.pollRead();
             bombBlock.setFileName(GlobalConfig.BombFile + threadId);
             ByteBuffer byteBuffer = bombBlock.reload();
             bodyBuffer.flip();
-            byteBuffer.put(bodyBuffer);
+            byteBuffer.put(bodyBuffer.array());
             byteBuffer.flip();
             bodyBuffer.clear();
             mortarFile.getWrite().offer(bombBlock);
         }
-        if (indexBuffer.position() >= BombSize) {
+        if (indexBuffer.position() >= BombIndexSize) {
             BombBlock bombBlock = mortarFile.pollRead();
             bombBlock.setFileName(GlobalConfig.IndexFile + threadId);
             ByteBuffer byteBuffer = bombBlock.reload();
             indexBuffer.flip();
-            byteBuffer.put(indexBuffer);
+            byteBuffer.put(indexBuffer.array());
             byteBuffer.flip();
             indexBuffer.clear();
             mortarFile.getWrite().offer(bombBlock);
         }
-        if (indexBuffer.position() == 16) {
+        if (indexBuffer.position() == IndexByte) {
             armsCatalog.addBombCatalog(new BombCatalog(message.getT(), message.getA(),
-                    localCarriage.get().indexFileOffset.getAndAdd(BombSize), GlobalConfig.IndexFile + threadId));
+                    localCarriage.get().indexFileOffset.getAndAdd(BombSize),
+                    GlobalConfig.IndexFile + threadId));
         }
         mortarFile.getFillingRate().note();
     }

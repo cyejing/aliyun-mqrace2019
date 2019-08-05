@@ -1,5 +1,7 @@
 package io.openmessaging.arms;
 
+import static io.openmessaging.GlobalConfig.IndexByte;
+
 import io.openmessaging.GlobalConfig;
 import io.openmessaging.Message;
 import io.openmessaging.arms.ArmsCatalog.BombCatalog;
@@ -48,12 +50,12 @@ public class ScratchMachine {
                 mortarFile.findIndexFile(fileName, byteBuffer, bombCatalog.getOffset());
                 byteBuffer.flip();
                 for (int i = 0; i < GlobalConfig.IndexSize; i++) {
-                    if (byteBuffer.position() + 16 > byteBuffer.limit()) {
+                    if (byteBuffer.position() + IndexByte > byteBuffer.limit()) {
                         break;
                     }
                     int t = byteBuffer.getInt();
                     int a = byteBuffer.getInt();
-                    long offset = byteBuffer.getLong();
+                    long offset = byteBuffer.getInt();
                     if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
                         result.add(new BombCatalog(t, a, offset, fileName));
                         mortarFile.getIndexRate().note();
@@ -80,12 +82,12 @@ public class ScratchMachine {
                 mortarFile.findIndexFile(fileName, byteBuffer, bombCatalog.getOffset());
                 byteBuffer.flip();
                 for (int i = 0; i < GlobalConfig.IndexSize; i++) {
-                    if (byteBuffer.position() + 16 > byteBuffer.limit()) {
+                    if (byteBuffer.position() + IndexByte > byteBuffer.limit()) {
                         break;
                     }
                     int t = byteBuffer.getInt();
                     int a = byteBuffer.getInt();
-                    long offset = byteBuffer.getLong();
+                    long offset = byteBuffer.getInt();
                     if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
                         sum += a;
                         count += 1;
@@ -118,7 +120,7 @@ public class ScratchMachine {
             byteBuffer.flip();
 
             for (BombCatalog bombCatalog : bombCatalogs) {
-                if (bombCatalog.getOffset() >= fileOffset + GlobalConfig.BombSize) {
+                if (bombCatalog.getOffset() >= fileOffset + GlobalConfig.BombBodySize) {
                     byteBuffer.clear();
                     String fileName = GlobalConfig.BombFile + bombCatalog.getFileName().substring(bombCatalog.getFileName().lastIndexOf(GlobalConfig.IndexFile)+GlobalConfig.IndexFile.length());
                     mortarFile.findBodyFile(fileName, byteBuffer, bombCatalog.getOffset());
