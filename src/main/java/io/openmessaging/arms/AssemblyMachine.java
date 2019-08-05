@@ -63,6 +63,7 @@ public class AssemblyMachine {
             byteBuffer.flip();
             bodyBuffer.clear();
             mortarFile.getWrite().offer(bombBlock);
+//            localCarriage.get().bodyFileOffset.getAndAdd(0); // TODO
         }
         if (indexBuffer.position() >= BombIndexSize) {
             BombBlock bombBlock = mortarFile.pollRead();
