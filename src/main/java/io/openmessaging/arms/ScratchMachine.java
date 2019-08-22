@@ -130,7 +130,7 @@ public class ScratchMachine {
             byteBuffer.flip();
 
             for (BombCatalog bombCatalog : bombCatalogs) {
-                if (bombCatalog.getOffset() >= fileOffset + GlobalConfig.BombBodySize) {
+                if (bombCatalog.getOffset() >= fileOffset + GlobalConfig.BombSize) {
                     byteBuffer.clear();
                     String fileName = GlobalConfig.BombFile + bombCatalog.getFileName().substring(bombCatalog.getFileName().lastIndexOf(GlobalConfig.IndexFile)+GlobalConfig.IndexFile.length());
                     mortarFile.findBodyFile(fileName, byteBuffer, bombCatalog.getOffset());
@@ -139,7 +139,7 @@ public class ScratchMachine {
                 }
                 byteBuffer.position(new Long(bombCatalog.getOffset() - fileOffset).intValue());
                 byte[] body = new byte[34];
-                byteBuffer.get(body,0,32);
+                byteBuffer.get(body,0,34);
                 result.add(new Message(bombCatalog.getA(), bombCatalog.getT(), body));
                 mortarFile.getMessageRate().note();
             }
