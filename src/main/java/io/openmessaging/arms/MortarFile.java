@@ -82,6 +82,13 @@ public class MortarFile {
 
     public void stopWrite() {
         mortar.stop();
+        while (!write.isEmpty()) {
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
 
@@ -134,26 +141,30 @@ public class MortarFile {
             }
         }
 
-        private void writeFile() throws IOException {
-            Iterator<BombBlock> it = write.iterator();
-            while (it.hasNext()) {
-                BombBlock block = it.next();
-                String fileName = block.getFileName();
-                FileChannel fileChannel = map.get(fileName);
-                if (fileChannel == null) {
-                    map.putIfAbsent(fileName, new RandomAccessFile(fileName, "rw").getChannel());
-                    fileChannel = map.get(fileName);
+        private void writeFile() {
+            try{
+                Iterator<BombBlock> it = write.iterator();
+                while (it.hasNext()) {
+                    BombBlock block = it.next();
+                    String fileName = block.getFileName();
+                    FileChannel fileChannel = map.get(fileName);
+                    if (fileChannel == null) {
+                        map.putIfAbsent(fileName, new RandomAccessFile(fileName, "rw").getChannel());
+                        fileChannel = map.get(fileName);
+                    }
+                    ByteBuffer byteBuffer = block.getByteBuffer();
+                    fileChannel.write(byteBuffer);
+                    byteBuffer.clear();
+                    it.remove();
+                    recycle(block);
                 }
-                ByteBuffer byteBuffer = block.getByteBuffer();
-                fileChannel.write(byteBuffer);
-                byteBuffer.clear();
-                it.remove();
-                recycle(block);
+            } catch (Exception e) {
+                log.error("write file error", e);
             }
         }
     }
 
-    public ConcurrentMap<String, FileChannel> getMap() {
+    public ConcurrentMap<String, FileChannel> getFileMap() {
         return map;
     }
 }

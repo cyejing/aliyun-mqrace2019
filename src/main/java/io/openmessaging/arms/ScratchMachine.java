@@ -57,9 +57,9 @@ public class ScratchMachine {
                     if (byteBuffer.position() + IndexByte > byteBuffer.limit()) {
                         break;
                     }
-                    int t = byteBuffer.getInt();
-                    int a = byteBuffer.getInt();
-                    long offset = byteBuffer.getInt();
+                    long t = byteBuffer.getLong();
+                    long a = byteBuffer.getLong();
+                    long offset = byteBuffer.getLong();
                     if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
                         result.add(new BombCatalog(t, a, offset, fileName));
                         mortarFile.getIndexRate().note();
@@ -79,7 +79,6 @@ public class ScratchMachine {
         try {
             long sum=0;
             long count=0;
-            NavigableSet<BombCatalog> result = new ConcurrentSkipListSet<>(Comparator.comparingLong(BombCatalog::getOffset));
             ByteBuffer byteBuffer = ByteBuffer.allocate(GlobalConfig.BombSize);
             for (BombCatalog bombCatalog : bombCatalogs) {
                 String fileName = bombCatalog.getFileName();
@@ -89,9 +88,9 @@ public class ScratchMachine {
                     if (byteBuffer.position() + IndexByte > byteBuffer.limit()) {
                         break;
                     }
-                    int t = byteBuffer.getInt();
-                    int a = byteBuffer.getInt();
-                    long offset = byteBuffer.getInt();
+                    long t = byteBuffer.getLong();
+                    long a = byteBuffer.getLong();
+                    long offset = byteBuffer.getLong();
                     if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
                         sum += a;
                         count += 1;

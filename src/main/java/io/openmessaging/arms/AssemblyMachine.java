@@ -50,9 +50,9 @@ public class AssemblyMachine {
         long threadId = Thread.currentThread().getId();
         ByteBuffer bodyBuffer = localCarriage.get().bodyBuffer;
         ByteBuffer indexBuffer = localCarriage.get().indexBuffer;
-        indexBuffer.put(ByteUtil.toIntBytes(message.getT()));
-        indexBuffer.put(ByteUtil.toIntBytes(message.getA()));
-        indexBuffer.put(ByteUtil.toIntBytes(localCarriage.get().bodyFileOffset.getAndAdd(34)));
+        indexBuffer.putLong(message.getT());
+        indexBuffer.putLong(message.getA());
+        indexBuffer.putLong(localCarriage.get().bodyFileOffset.getAndAdd(34));
         bodyBuffer.put(message.getBody(), 0, 34);
         if (bodyBuffer.position() >= BombBodySize) {
             BombBlock bombBlock = mortarFile.pollRead();

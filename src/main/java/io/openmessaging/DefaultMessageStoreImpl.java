@@ -61,19 +61,11 @@ public class DefaultMessageStoreImpl extends MessageStore {
         return scratchMachine.findAvg(aMin, aMax, tMin, tMax);
     }
 
-    public void setAssemblyMachine(AssemblyMachine assemblyMachine) {
-        this.assemblyMachine = assemblyMachine;
+    public ArmsCatalog getArmsCatalog() {
+        return armsCatalog;
     }
 
-    public void setScratchMachine(ScratchMachine scratchMachine) {
-        this.scratchMachine = scratchMachine;
-    }
-
-    public void setArmsCatalog(ArmsCatalog armsCatalog) {
-        this.armsCatalog = armsCatalog;
-    }
-
-    public void setMortarFile(MortarFile mortarFile) {
-        this.mortarFile = mortarFile;
+    public MortarFile getMortarFile() {
+        return mortarFile;
     }
 }
