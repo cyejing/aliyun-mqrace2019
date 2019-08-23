@@ -1,5 +1,6 @@
 package io.openmessaging.arms;
 
+import static io.openmessaging.GlobalConfig.BodyByte;
 import static io.openmessaging.GlobalConfig.BombBodySize;
 import static io.openmessaging.GlobalConfig.BombIndexSize;
 import static io.openmessaging.GlobalConfig.BombSize;
@@ -52,8 +53,8 @@ public class AssemblyMachine {
         ByteBuffer indexBuffer = localCarriage.get().indexBuffer;
         indexBuffer.putLong(message.getT());
         indexBuffer.putLong(message.getA());
-        indexBuffer.putLong(localCarriage.get().bodyFileOffset.getAndAdd(34));
-        bodyBuffer.put(message.getBody(), 0, 34);
+        indexBuffer.putLong(localCarriage.get().bodyFileOffset.getAndAdd(BodyByte));
+        bodyBuffer.put(message.getBody(), 0, BodyByte);
         if (bodyBuffer.position() >= BombBodySize) {
             BombBlock bombBlock = mortarFile.pollRead();
             bombBlock.setFileName(GlobalConfig.BombFile + threadId);

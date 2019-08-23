@@ -13,12 +13,12 @@ public interface GlobalConfig {
     int BombSize = 64 * 1024;
 
     int IndexByte = 24;
-    int bodyByte = 34;
+    int BodyByte = 34;
 
     int IndexSize = (64 * 1024) / IndexByte;
-    int BodySize = (64 * 1024) / bodyByte;
+    int BodySize = (64 * 1024) / BodyByte;
 
     int BombIndexSize = IndexSize * IndexByte;
-    int BombBodySize = BodySize * bodyByte;
+    int BombBodySize = BodySize * BodyByte;
 
 }

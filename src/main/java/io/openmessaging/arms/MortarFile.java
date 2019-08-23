@@ -1,6 +1,5 @@
 package io.openmessaging.arms;
 
-import io.openmessaging.arms.ArmsCatalog.BombCatalog;
 import io.openmessaging.arms.commmon.ThroughputRate;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -8,11 +7,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

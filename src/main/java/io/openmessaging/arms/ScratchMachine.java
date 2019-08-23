@@ -1,5 +1,6 @@
 package io.openmessaging.arms;
 
+import static io.openmessaging.GlobalConfig.BodyByte;
 import static io.openmessaging.GlobalConfig.IndexByte;
 
 import io.openmessaging.GlobalConfig;
@@ -13,7 +14,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -137,8 +137,8 @@ public class ScratchMachine {
                     fileOffset = bombCatalog.getOffset();
                 }
                 byteBuffer.position(new Long(bombCatalog.getOffset() - fileOffset).intValue());
-                byte[] body = new byte[34];
-                byteBuffer.get(body,0,34);
+                byte[] body = new byte[BodyByte];
+                byteBuffer.get(body, 0, BodyByte);
                 result.add(new Message(bombCatalog.getA(), bombCatalog.getT(), body));
                 mortarFile.getMessageRate().note();
             }
