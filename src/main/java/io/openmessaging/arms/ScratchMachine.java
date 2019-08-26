@@ -42,6 +42,7 @@ public class ScratchMachine {
             List<Message> messages = findBodyFile(indexFile);
             result.addAll(messages);
         }
+        mortarFile.getMessageRate().note();
         result.sort(Comparator.comparingLong(Message::getT));
         return new ArrayList<>(result);
     }

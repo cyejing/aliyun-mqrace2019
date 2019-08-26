@@ -43,6 +43,7 @@ public class MortarFile {
     private Mortar mortar;
 
     private ThroughputRate assemblyRate = new ThroughputRate(1000); //4194304
+    private ThroughputRate messageRate = new ThroughputRate(1000); //4194304
 
 
     public MortarFile(Collection<BombBlock> bombBlockCollections) {
@@ -56,7 +57,7 @@ public class MortarFile {
                 try {
                     Thread.sleep(1000);
                     log.info("ready:{},working:{},assemblyRate:{},messageRate:{},indexRate:{}",
-                            ready.size(), working.size(), assemblyRate.getThroughputRate());
+                            ready.size(), working.size(), assemblyRate.getThroughputRate(),messageRate.getThroughputRate());
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -176,5 +177,9 @@ public class MortarFile {
 
     public ConcurrentMap<String, FileChannel> getFileMap() {
         return map;
+    }
+
+    public ThroughputRate getMessageRate() {
+        return messageRate;
     }
 }
