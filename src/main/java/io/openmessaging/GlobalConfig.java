@@ -21,4 +21,5 @@ public interface GlobalConfig {
     int BombIndexSize = IndexSize * IndexByte;
     int BombBodySize = BodySize * BodyByte;
 
+    int CacheSize = 2000;
 }

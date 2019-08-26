@@ -14,6 +14,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentSkipListSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,6 +109,43 @@ public class ScratchMachine {
 
 
 
+    public CompletableFuture<AvgResult> findAvgIndexFileAsync(Set<BombCatalog> bombCatalogs, long aMin, long aMax, long tMin, long tMax) {
+        try {
+            CompletableFuture<AvgResult> result = CompletableFuture.completedFuture(new AvgResult(0, 0));
+
+            for (BombCatalog bombCatalog : bombCatalogs) {
+                String fileName = bombCatalog.getFileName();
+                CompletableFuture<BombBlock> bombFuture = mortarFile.findIndexFileAsync(fileName, bombCatalog.getOffset());
+                result = result.thenCombine(bombFuture, (avgResult, bombBlock) ->{
+                    ByteBuffer byteBuffer = bombBlock.getByteBuffer();
+                    byteBuffer.flip();
+                    for (int i = 0; i < GlobalConfig.IndexSize; i++) {
+                        if (byteBuffer.position() + IndexByte > byteBuffer.limit()) {
+                            break;
+                        }
+                        long t = byteBuffer.getLong();
+                        long a = byteBuffer.getLong();
+                        long offset = byteBuffer.getLong();
+                        if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
+                            avgResult.sum += a;
+                            avgResult.count += 1;
+                        }
+                    }
+                    byteBuffer.clear();
+                    mortarFile.recycle(bombBlock);
+                    return avgResult;
+                });
+
+            }
+            return result;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    }
+
+
+
     public List<Message> findBodyFile(NavigableSet<BombCatalog> bombCatalogs) {
         if (bombCatalogs == null || bombCatalogs.isEmpty()) {
             return Collections.emptyList();
@@ -151,29 +189,34 @@ public class ScratchMachine {
 
     public long findAvg(long aMin, long aMax, long tMin, long tMax) {
         Set<String> fileNames = armsCatalog.getFileNames();
-        long sum = 0;
-        long count = 0;
+        CompletableFuture<AvgResult> result = CompletableFuture.completedFuture(new AvgResult(0, 0));
         for (String fileName : fileNames) {
             Set<BombCatalog> bombCatalogs = armsCatalog.findBombCatalogs(fileName, tMin, tMax);
-            AvgResult avgResult = findAvgIndexFile(bombCatalogs, aMin, aMax, tMin, tMax);
-            sum += avgResult.sum;
-            count += avgResult.count;
+
+            CompletableFuture<AvgResult> async = findAvgIndexFileAsync(bombCatalogs, aMin, aMax, tMin, tMax);
+            result = result.thenCombine(async, (avgResult1, avgResult2) -> {
+                avgResult1.sum = avgResult1.sum + avgResult2.sum;
+                avgResult1.count = avgResult1.count + avgResult2.count;
+                return avgResult1;
+            });
         }
-        if (count == 0) {
+        AvgResult join = result.join();
+        if (join.count == 0) {
             return 0;
         }
-        return sum / count;
+        return join.sum / join.count;
     }
 
 
-    class AvgResult{
+    public static class AvgResult{
 
-        long sum;
-        long count;
+        public long sum;
+        public long count;
 
         public AvgResult(long sum, long count) {
             this.sum = sum;
             this.count = count;
         }
+
     }
 }

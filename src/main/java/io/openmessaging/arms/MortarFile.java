@@ -1,5 +1,8 @@
 package io.openmessaging.arms;
 
+import static io.openmessaging.GlobalConfig.CacheSize;
+
+import io.openmessaging.arms.ArmsCatalog.BombCatalog;
 import io.openmessaging.arms.commmon.ThroughputRate;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -7,6 +10,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -17,12 +23,21 @@ import org.slf4j.LoggerFactory;
  * @author Born
  */
 public class MortarFile {
+
     private static final Logger log = LoggerFactory.getLogger(MortarFile.class);
 
     private ConcurrentMap<String, FileChannel> map = new ConcurrentHashMap<>();
 
-    private ConcurrentLinkedQueue<BombBlock> read = new ConcurrentLinkedQueue<>();
-    private ConcurrentLinkedQueue<BombBlock> write = new ConcurrentLinkedQueue<>();
+    private ConcurrentLinkedQueue<BombBlock> ready = new ConcurrentLinkedQueue<>();
+    private ConcurrentLinkedQueue<BombBlock> working = new ConcurrentLinkedQueue<>();
+
+
+    private LinkedHashMap<Long, BombBlock> cache = new LinkedHashMap<Long, BombBlock>(8, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry eldest) {
+            return size() > CacheSize;
+        }
+    };
 
     private Mortar mortar;
 
@@ -33,7 +48,7 @@ public class MortarFile {
     private ThroughputRate indexRate = new ThroughputRate(1000); //4194304
 
     public MortarFile(Collection<BombBlock> bombBlockCollections) {
-        read.addAll(bombBlockCollections);
+        ready.addAll(bombBlockCollections);
 
         this.mortar = new Mortar();
         new Thread(mortar, "MortarFile-" + 0).start();
@@ -42,8 +57,9 @@ public class MortarFile {
             while (true) {
                 try {
                     Thread.sleep(1000);
-                    log.info("read:{},write:{},fillingRate:{},assemblyRate:{},messageRate:{},indexRate:{}", read.size(),
-                            write.size(),
+                    log.info("ready:{},working:{},fillingRate:{},assemblyRate:{},messageRate:{},indexRate:{}",
+                            ready.size(),
+                            working.size(),
                             fillingRate.getThroughputRate(), assemblyRate.getThroughputRate(),
                             messageRate.getThroughputRate(), indexRate.getThroughputRate());
                 } catch (InterruptedException e) {
@@ -72,14 +88,14 @@ public class MortarFile {
         fileChannel.read(byteBuffer, offset);
     }
 
-    public void findBodyFile(String fileName, ByteBuffer byteBuffer,long offset) throws IOException {
+    public void findBodyFile(String fileName, ByteBuffer byteBuffer, long offset) throws IOException {
         FileChannel fileChannel = map.get(fileName);
         fileChannel.read(byteBuffer, offset);
     }
 
     public void stopWrite() {
         mortar.stop();
-        while (!write.isEmpty()) {
+        while (!working.isEmpty()) {
             try {
                 Thread.sleep(10);
             } catch (InterruptedException e) {
@@ -88,10 +104,9 @@ public class MortarFile {
         }
     }
 
-
-    public BombBlock pollRead() {
+    public BombBlock pollReady() {
         BombBlock bombBlock;
-        while ((bombBlock = read.poll()) == null) {
+        while ((bombBlock = ready.poll()) == null) {
             try {
                 Thread.sleep(10L);
             } catch (InterruptedException e) {
@@ -102,15 +117,29 @@ public class MortarFile {
         return bombBlock;
     }
 
-    public ConcurrentLinkedQueue<BombBlock> getWrite() {
-        return write;
+    public ConcurrentLinkedQueue<BombBlock> getWorking() {
+        return working;
     }
 
     public void recycle(BombBlock bombBlock) {
-        while (!read.offer(bombBlock)) {
+        while (!ready.offer(bombBlock)) {
 
         }
         assemblyRate.note();
+    }
+
+    public CompletableFuture<BombBlock> findIndexFileAsync(String fileName, long offset) {
+        return CompletableFuture.supplyAsync(() -> {
+            BombBlock bombBlock = pollReady();
+            ByteBuffer byteBuffer = bombBlock.reload();
+            FileChannel fileChannel = map.get(fileName);
+            try {
+                fileChannel.read(byteBuffer, offset);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return bombBlock;
+        });
     }
 
     class Mortar implements Runnable {
@@ -127,20 +156,20 @@ public class MortarFile {
                 try {
                     if (stop) {
                         writeFile();
-                        log.info("file write over. readSize:{}, writeSize:{}", read.size(), write.size());
+                        log.info("file working over. readSize:{}, writeSize:{}", ready.size(), working.size());
                         return;
-                    }else{
+                    } else {
                         writeFile();
                     }
                 } catch (Exception e) {
-                    log.error("write file error", e);
+                    log.error("working file error", e);
                 }
             }
         }
 
         private void writeFile() {
-            try{
-                Iterator<BombBlock> it = write.iterator();
+            try {
+                Iterator<BombBlock> it = working.iterator();
                 while (it.hasNext()) {
                     BombBlock block = it.next();
                     String fileName = block.getFileName();
@@ -156,7 +185,7 @@ public class MortarFile {
                     recycle(block);
                 }
             } catch (Exception e) {
-                log.error("write file error", e);
+                log.error("working file error", e);
             }
         }
     }

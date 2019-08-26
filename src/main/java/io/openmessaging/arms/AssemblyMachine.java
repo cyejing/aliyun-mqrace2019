@@ -9,7 +9,6 @@ import static io.openmessaging.GlobalConfig.IndexByte;
 import io.openmessaging.GlobalConfig;
 import io.openmessaging.Message;
 import io.openmessaging.arms.ArmsCatalog.BombCatalog;
-import io.openmessaging.arms.utils.ByteUtil;
 import java.nio.ByteBuffer;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -56,25 +55,25 @@ public class AssemblyMachine {
         indexBuffer.putLong(localCarriage.get().bodyFileOffset.getAndAdd(BodyByte));
         bodyBuffer.put(message.getBody(), 0, BodyByte);
         if (bodyBuffer.position() >= BombBodySize) {
-            BombBlock bombBlock = mortarFile.pollRead();
+            BombBlock bombBlock = mortarFile.pollReady();
             bombBlock.setFileName(GlobalConfig.BombFile + threadId);
             ByteBuffer byteBuffer = bombBlock.reload();
             bodyBuffer.flip();
             byteBuffer.put(bodyBuffer.array());
             byteBuffer.flip();
             bodyBuffer.clear();
-            mortarFile.getWrite().offer(bombBlock);
+            mortarFile.getWorking().offer(bombBlock);
             localCarriage.get().bodyFileOffset.getAndAdd(BombSize - BombBodySize); // TODO
         }
         if (indexBuffer.position() >= BombIndexSize) {
-            BombBlock bombBlock = mortarFile.pollRead();
+            BombBlock bombBlock = mortarFile.pollReady();
             bombBlock.setFileName(GlobalConfig.IndexFile + threadId);
             ByteBuffer byteBuffer = bombBlock.reload();
             indexBuffer.flip();
             byteBuffer.put(indexBuffer.array());
             byteBuffer.flip();
             indexBuffer.clear();
-            mortarFile.getWrite().offer(bombBlock);
+            mortarFile.getWorking().offer(bombBlock);
         }
         if (indexBuffer.position() == IndexByte) {
             armsCatalog.addBombCatalog(new BombCatalog(message.getT(), message.getA(),
@@ -91,22 +90,22 @@ public class AssemblyMachine {
             if (stopWrite.compareAndSet(false, true)) {
                 for (Entry<Long, Carriage> entry : localMap.entrySet()) {
                     {
-                        BombBlock bombBlock = mortarFile.pollRead();
+                        BombBlock bombBlock = mortarFile.pollReady();
                         bombBlock.setFileName(GlobalConfig.BombFile + entry.getKey());
                         ByteBuffer byteBuffer = bombBlock.reload();
                         entry.getValue().bodyBuffer.flip();
                         byteBuffer.put(entry.getValue().bodyBuffer);
                         byteBuffer.flip();
-                        mortarFile.getWrite().offer(bombBlock);
+                        mortarFile.getWorking().offer(bombBlock);
                     }
                     {
-                        BombBlock bombBlock = mortarFile.pollRead();
+                        BombBlock bombBlock = mortarFile.pollReady();
                         bombBlock.setFileName(GlobalConfig.IndexFile + entry.getKey());
                         ByteBuffer byteBuffer = bombBlock.reload();
                         entry.getValue().indexBuffer.flip();
                         byteBuffer.put(entry.getValue().indexBuffer);
                         byteBuffer.flip();
-                        mortarFile.getWrite().offer(bombBlock);
+                        mortarFile.getWorking().offer(bombBlock);
                     }
                 }
 

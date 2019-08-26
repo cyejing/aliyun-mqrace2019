@@ -42,22 +42,17 @@ public class DefaultMessageStoreImpl extends MessageStore {
     private AtomicInteger printSize = new AtomicInteger(20000);
     @Override
     void put(Message message) {
-//        if (printSize.getAndDecrement() > 0) {
-//            log.info("put message:{}", message);
-//        }
         assemblyMachine.filling(message);
     }
 
     @Override
     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
         assemblyMachine.stopWrite();
-//        log.info("getMessage aMin:{},aMax:{},tMin:{},tMax:{},aDev:{},tDev{}", aMin, aMax, tMin, tMax, aMax - aMin, tMax - tMin);
         return scratchMachine.findMessage(aMin, aMax, tMin, tMax);
     }
 
     @Override
     long getAvgValue(long aMin, long aMax, long tMin, long tMax) {
-//        log.info("getAvgValue aMin:{},aMax:{},tMin:{},tMax:{},aDev:{},tDev{}", aMin, aMax, tMin, tMax, aMax - aMin, tMax - tMin);
         return scratchMachine.findAvg(aMin, aMax, tMin, tMax);
     }
 
