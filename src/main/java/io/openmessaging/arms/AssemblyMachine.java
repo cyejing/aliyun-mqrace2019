@@ -44,8 +44,6 @@ public class AssemblyMachine {
         this.mortarFile = mortarFile;
     }
 
-
-
     public void filling(Message message) {
         long threadId = Thread.currentThread().getId();
         ByteBuffer bodyBuffer = localCarriage.get().bodyBuffer;

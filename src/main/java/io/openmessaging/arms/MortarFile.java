@@ -112,18 +112,17 @@ public class MortarFile {
         assemblyRate.note();
     }
 
-    public CompletableFuture<ByteBuffer> findIndexFileAsync(String fileName, long offset) {
+    public CompletableFuture<BombBlock> findIndexFileAsync(String fileName, long offset) {
         return CompletableFuture.supplyAsync(() -> {
-            ByteBuffer byteBuffer = ByteBuffer.allocate(BombSize);
-//            BombBlock bombBlock = pollReady();
-//            ByteBuffer byteBuffer = bombBlock.reload();
+            BombBlock bombBlock = pollReady();
+            ByteBuffer byteBuffer = bombBlock.reload();
             FileChannel fileChannel = map.get(fileName);
             try {
                 fileChannel.read(byteBuffer, offset);
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            return byteBuffer;
+            return bombBlock;
         });
     }
 

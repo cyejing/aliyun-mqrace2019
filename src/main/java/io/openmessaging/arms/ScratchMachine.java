@@ -75,48 +75,15 @@ public class ScratchMachine {
         }
     }
 
-
-    public AvgResult findAvgIndexFile(Set<BombCatalog> bombCatalogs, long aMin, long aMax, long tMin, long tMax) {
-        try {
-            long sum=0;
-            long count=0;
-            ByteBuffer byteBuffer = ByteBuffer.allocate(GlobalConfig.BombSize);
-            for (BombCatalog bombCatalog : bombCatalogs) {
-                String fileName = bombCatalog.getFileName();
-                mortarFile.findIndexFile(fileName, byteBuffer, bombCatalog.getOffset());
-                byteBuffer.flip();
-                for (int i = 0; i < GlobalConfig.IndexSize; i++) {
-                    if (byteBuffer.position() + IndexByte > byteBuffer.limit()) {
-                        break;
-                    }
-                    long t = byteBuffer.getLong();
-                    long a = byteBuffer.getLong();
-                    long offset = byteBuffer.getLong();
-                    if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
-                        sum += a;
-                        count += 1;
-                    }
-                }
-                byteBuffer.clear();
-            }
-            return new AvgResult(sum, count);
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
-    }
-
-
-
     public CompletableFuture<AvgResult> findAvgIndexFileAsync(Set<BombCatalog> bombCatalogs, long aMin, long aMax, long tMin, long tMax) {
         try {
             CompletableFuture<AvgResult> result = CompletableFuture.completedFuture(new AvgResult(0, 0));
 
             for (BombCatalog bombCatalog : bombCatalogs) {
                 String fileName = bombCatalog.getFileName();
-                CompletableFuture<ByteBuffer> bombFuture = mortarFile.findIndexFileAsync(fileName, bombCatalog.getOffset());
+                CompletableFuture<BombBlock> bombFuture = mortarFile.findIndexFileAsync(fileName, bombCatalog.getOffset());
                 result = result.thenCombine(bombFuture, (avgResult, bombBlock) ->{
-                    ByteBuffer byteBuffer = bombBlock;
+                    ByteBuffer byteBuffer = bombBlock.getByteBuffer();
                     byteBuffer.flip();
                     for (int i = 0; i < GlobalConfig.IndexSize; i++) {
                         if (byteBuffer.position() + IndexByte > byteBuffer.limit()) {
@@ -131,7 +98,7 @@ public class ScratchMachine {
                         }
                     }
                     byteBuffer.clear();
-//                    mortarFile.recycle(bombBlock);
+                    mortarFile.recycle(bombBlock);
                     return avgResult;
                 });
 
@@ -142,8 +109,6 @@ public class ScratchMachine {
             throw new RuntimeException(e);
         }
     }
-
-
 
     public List<Message> findBodyFile(NavigableSet<BombCatalog> bombCatalogs) {
         if (bombCatalogs == null || bombCatalogs.isEmpty()) {
