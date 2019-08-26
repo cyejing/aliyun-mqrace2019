@@ -1,5 +1,6 @@
 package io.openmessaging.arms;
 
+import static io.openmessaging.GlobalConfig.BombSize;
 import static io.openmessaging.GlobalConfig.CacheSize;
 
 import io.openmessaging.arms.ArmsCatalog.BombCatalog;
@@ -41,11 +42,8 @@ public class MortarFile {
 
     private Mortar mortar;
 
-
-    private ThroughputRate fillingRate = new ThroughputRate(1000); //4194304
     private ThroughputRate assemblyRate = new ThroughputRate(1000); //4194304
-    private ThroughputRate messageRate = new ThroughputRate(1000); //4194304
-    private ThroughputRate indexRate = new ThroughputRate(1000); //4194304
+
 
     public MortarFile(Collection<BombBlock> bombBlockCollections) {
         ready.addAll(bombBlockCollections);
@@ -57,11 +55,8 @@ public class MortarFile {
             while (true) {
                 try {
                     Thread.sleep(1000);
-                    log.info("ready:{},working:{},fillingRate:{},assemblyRate:{},messageRate:{},indexRate:{}",
-                            ready.size(),
-                            working.size(),
-                            fillingRate.getThroughputRate(), assemblyRate.getThroughputRate(),
-                            messageRate.getThroughputRate(), indexRate.getThroughputRate());
+                    log.info("ready:{},working:{},assemblyRate:{},messageRate:{},indexRate:{}",
+                            ready.size(), working.size(), assemblyRate.getThroughputRate());
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -69,18 +64,6 @@ public class MortarFile {
         }, "printLog");
         printLog.setDaemon(true);
         printLog.start();
-    }
-
-    public ThroughputRate getFillingRate() {
-        return fillingRate;
-    }
-
-    public ThroughputRate getMessageRate() {
-        return messageRate;
-    }
-
-    public ThroughputRate getIndexRate() {
-        return indexRate;
     }
 
     public void findIndexFile(String fileName, ByteBuffer byteBuffer,long offset) throws IOException {
@@ -128,17 +111,18 @@ public class MortarFile {
         assemblyRate.note();
     }
 
-    public CompletableFuture<BombBlock> findIndexFileAsync(String fileName, long offset) {
+    public CompletableFuture<ByteBuffer> findIndexFileAsync(String fileName, long offset) {
         return CompletableFuture.supplyAsync(() -> {
-            BombBlock bombBlock = pollReady();
-            ByteBuffer byteBuffer = bombBlock.reload();
+            ByteBuffer byteBuffer = ByteBuffer.allocate(BombSize);
+//            BombBlock bombBlock = pollReady();
+//            ByteBuffer byteBuffer = bombBlock.reload();
             FileChannel fileChannel = map.get(fileName);
             try {
                 fileChannel.read(byteBuffer, offset);
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            return bombBlock;
+            return byteBuffer;
         });
     }
 

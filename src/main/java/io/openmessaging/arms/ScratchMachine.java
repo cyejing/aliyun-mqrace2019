@@ -63,7 +63,6 @@ public class ScratchMachine {
                     long offset = byteBuffer.getLong();
                     if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
                         result.add(new BombCatalog(t, a, offset, fileName));
-                        mortarFile.getIndexRate().note();
                     }
                 }
                 byteBuffer.clear();
@@ -95,7 +94,6 @@ public class ScratchMachine {
                     if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
                         sum += a;
                         count += 1;
-                        mortarFile.getIndexRate().note();
                     }
                 }
                 byteBuffer.clear();
@@ -115,9 +113,9 @@ public class ScratchMachine {
 
             for (BombCatalog bombCatalog : bombCatalogs) {
                 String fileName = bombCatalog.getFileName();
-                CompletableFuture<BombBlock> bombFuture = mortarFile.findIndexFileAsync(fileName, bombCatalog.getOffset());
+                CompletableFuture<ByteBuffer> bombFuture = mortarFile.findIndexFileAsync(fileName, bombCatalog.getOffset());
                 result = result.thenCombine(bombFuture, (avgResult, bombBlock) ->{
-                    ByteBuffer byteBuffer = bombBlock.getByteBuffer();
+                    ByteBuffer byteBuffer = bombBlock;
                     byteBuffer.flip();
                     for (int i = 0; i < GlobalConfig.IndexSize; i++) {
                         if (byteBuffer.position() + IndexByte > byteBuffer.limit()) {
@@ -132,7 +130,7 @@ public class ScratchMachine {
                         }
                     }
                     byteBuffer.clear();
-                    mortarFile.recycle(bombBlock);
+//                    mortarFile.recycle(bombBlock);
                     return avgResult;
                 });
 
@@ -178,7 +176,6 @@ public class ScratchMachine {
                 byte[] body = new byte[BodyByte];
                 byteBuffer.get(body, 0, BodyByte);
                 result.add(new Message(bombCatalog.getA(), bombCatalog.getT(), body));
-                mortarFile.getMessageRate().note();
             }
             return result;
         } catch (IOException e) {

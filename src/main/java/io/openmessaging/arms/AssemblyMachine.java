@@ -80,7 +80,6 @@ public class AssemblyMachine {
                     localCarriage.get().indexFileOffset.getAndAdd(BombSize),
                     GlobalConfig.IndexFile + threadId));
         }
-        mortarFile.getFillingRate().note();
     }
 
     private CountDownLatch latch = new CountDownLatch(1);
